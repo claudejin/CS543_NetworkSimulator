@@ -5,6 +5,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.LongAdder;
 
+import com.ns.simulation.Properties;
+
 public class NSController extends NetworkEntity implements Runnable {
 	private Bandwidth bandwidth = null;
 	
@@ -19,7 +21,7 @@ public class NSController extends NetworkEntity implements Runnable {
 	
 	public NSController(String name) {
 		super(name);
-		bandwidth = new Bandwidth(this.getName(), 10);
+		bandwidth = new Bandwidth(this.getName(), Properties.CONTROLLER_BANDWIDTH);
 		// TODO Auto-generated constructor stub
 	}
 

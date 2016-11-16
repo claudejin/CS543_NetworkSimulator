@@ -35,11 +35,11 @@ public class Main {
 		int budget = 10000;
 		
 		while (budget > 0) {
-			rmg.generate(4);
+			rmg.generate(Properties.PACKET_IN_RATE * Properties.PACKET_IN_GENERATION_INTERVAL / 1000);
 			budget--;
 //			break;
 			try {
-				Thread.sleep(100);
+				Thread.sleep(Properties.PACKET_IN_GENERATION_INTERVAL);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
