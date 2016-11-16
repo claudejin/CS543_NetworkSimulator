@@ -18,7 +18,7 @@ public class NSSwitch extends NetworkEntity implements Runnable {
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
-		while (true) {
+		while (this.operable) {
 			if (!msgQueue.isEmpty())
 				sendMessage();
 			

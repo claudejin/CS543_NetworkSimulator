@@ -5,8 +5,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class NSController extends NetworkEntity implements Runnable {
-	private boolean operable = true;
-	
 	private Bandwidth bandwidth = null;
 	
 	private Queue<Packet> innerQueue = new ConcurrentLinkedQueue<Packet>();
@@ -26,7 +24,7 @@ public class NSController extends NetworkEntity implements Runnable {
 		// TODO Auto-generated method stub
 		CoreNetwork.registerController(this);
 		
-		while (operable) {
+		while (this.operable) {
 			if (!selectionQueue.isEmpty())
 				sendMessage();
 			

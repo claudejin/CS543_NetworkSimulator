@@ -28,6 +28,17 @@ public class Main {
 		
 		RandomMessageGenerator rmg = new RandomMessageGenerator(hosts);
 		rmg.generate(5);
+		
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		for (NetworkEntity ne : entities) {
+			ne.shutdown();
+		}
 	}
 
 	public void initialize() {

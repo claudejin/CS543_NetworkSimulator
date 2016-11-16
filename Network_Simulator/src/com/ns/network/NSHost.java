@@ -18,7 +18,7 @@ public class NSHost extends NetworkEntity implements Runnable, MessageInjection 
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
-		while (true) {
+		while (this.operable) {
 			if (!msgQueue.isEmpty())
 				sendMessage();
 			
