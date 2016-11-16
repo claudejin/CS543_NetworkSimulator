@@ -1,21 +1,25 @@
 package com.ns.network;
 
 import java.util.HashMap;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.LongAdder;
 
 public class NSController extends NetworkEntity implements Runnable {
 	private Bandwidth bandwidth = null;
 	
-	private Queue<Packet> innerQueue = new ConcurrentLinkedQueue<Packet>();
-	private Queue<Packet> outerQueue = new ConcurrentLinkedQueue<Packet>();
-	private Queue<Integer> selectionQueue = new ConcurrentLinkedQueue<Integer>(); // 0: InnterQueue, 1: OuterQueue
+	private BlockingQueue<Packet> innerQueue = new LinkedBlockingQueue<Packet>();
+	private BlockingQueue<Packet> outerQueue = new LinkedBlockingQueue<Packet>();
+	private BlockingQueue<Integer> selectionQueue = new LinkedBlockingQueue<Integer>(); // 0: InnterQueue, 1: OuterQueue
 	
 	private HashMap<String, NSSwitch> mySwitches = new HashMap<String, NSSwitch>();
 	
+	private LongAdder packetIn = new LongAdder();
+	private LongAdder packetOut = new LongAdder();
+	
 	public NSController(String name) {
 		super(name);
-		bandwidth = new Bandwidth(this.getName(), 1);
+		bandwidth = new Bandwidth(this.getName(), 10);
 		// TODO Auto-generated constructor stub
 	}
 
@@ -25,15 +29,14 @@ public class NSController extends NetworkEntity implements Runnable {
 		CoreNetwork.registerController(this);
 		
 		while (this.operable) {
-			if (!selectionQueue.isEmpty())
-				sendMessage();
+			sendMessage();
 			
-			try {
-				Thread.sleep(1);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+//			try {
+//				Thread.sleep(1);
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
 		}
 		
 		CoreNetwork.unregisterController(this);
@@ -49,63 +52,91 @@ public class NSController extends NetworkEntity implements Runnable {
 		else
 			System.out.println("ERR: Controller - unregisterSwitch");
 	}
-
+	
+	class SendingThread extends Thread {
+		protected NSController cntr = null;
+		
+		public SendingThread(NSController cntr) {
+			this.cntr = cntr;
+		}
+	}
+	
 	@Override
 	public void sendMessage() {
 		// TODO Auto-generated method stub
-		if (!selectionQueue.isEmpty()) {
-			Packet pckt;
-			int queueSelected = selectionQueue.poll();
-			boolean treated = false;
-			
-			bandwidth.useResource();
-			
-			if (queueSelected == 0) {
-				pckt = innerQueue.poll();
-				for (NSSwitch swtch : mySwitches.values()) {
-					if (swtch.containsHostByName(pckt.dst)) {
-						pckt.touch(this.getName());
-						swtch.receiveMessage(pckt);
-						treated = true;
+		new SendingThread(this) {
+			@Override
+			public void run() {
+				try {
+					bandwidth.useResource();
+					
+					Packet pckt;
+					boolean treated = false;
+					int queueSelected = selectionQueue.take();
+					
+					if (queueSelected == 0) {
+						pckt = innerQueue.take();
+						for (NSSwitch swtch : mySwitches.values()) {
+							if (swtch.containsHostByName(pckt.dst)) {
+								pckt.touch(cntr.getName());
+								swtch.receiveMessage(pckt);
+								treated = true;
+							}
+						}
 					}
+					
+					// When the target switch is migrated, the packet cannot be treated internally
+					if (!treated) {
+						pckt = outerQueue.take();
+						pckt.touch(cntr.getName());
+						CoreNetwork.requestBroadcastExcept(cntr, pckt);
+					}
+					
+					packetOut.increment();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
 			}
-			
-			// When the target switch is migrated, the packet cannot be treated internally
-			if (!treated) {
-				pckt = outerQueue.poll();
-				pckt.touch(this.getName());
-				CoreNetwork.requestBroadcastExcept(this, pckt);
-			}
-		}
+		}.start();
 	}
 
 	@Override
 	public void receiveMessage(Packet pckt) {
 		// TODO Auto-generated method stub
-		boolean treated = false;
-		
-		for (NSSwitch swtch : mySwitches.values()) {
-			if (swtch.containsHostByName(pckt.dst)) {
-				innerQueue.add(pckt);
-				selectionQueue.add(0);
-				treated = true;
-			}
-		}
-		
-		if (!treated) {
+		try {
+			boolean treated = false;
+			
 			for (NSSwitch swtch : mySwitches.values()) {
-				if (swtch.containsHostByName(pckt.src)) {
-					outerQueue.add(pckt);
-					selectionQueue.add(1);
+				if (swtch.containsHostByName(pckt.dst)) {
+					innerQueue.put(pckt);
+					selectionQueue.put(0);
 					treated = true;
 				}
 			}
-		}
-		
-		if (!treated) {
-			; // Drop
+			
+			if (!treated) {
+				for (NSSwitch swtch : mySwitches.values()) {
+					if (swtch.containsHostByName(pckt.src)) {
+						outerQueue.put(pckt);
+						selectionQueue.put(1);
+						treated = true;
+					}
+				}
+			}
+			
+			if (treated)
+				packetIn.increment();
+			
+			if (!treated) {
+				; // Drop
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 	}
-
+	
+	public String getQueueLength() {
+		String res = selectionQueue.size() + " (+" + packetIn.sumThenReset() + ", -" + packetOut.sumThenReset() + ")";
+		return res;
+	}
 }

@@ -2,7 +2,7 @@ package com.ns.network;
 
 import java.util.HashSet;
 
-public class CoreNetwork implements Runnable {
+public class CoreNetwork extends Thread {
 	private static HashSet<NSController> controllerset = new HashSet<NSController>();
 	
 	public static synchronized void registerController(NSController cntr) {
@@ -33,6 +33,11 @@ public class CoreNetwork implements Runnable {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
+			for (NSController cntr : controllerset) {
+				System.out.println("[MONITOR] " + cntr.getName() + " queued by " + cntr.getQueueLength());
+			}
+			System.out.println("---------------------------");
 		}
 	}
 }

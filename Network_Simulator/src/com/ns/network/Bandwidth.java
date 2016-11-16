@@ -12,14 +12,16 @@ public class Bandwidth extends Semaphore {
 	
 	public void useResource() {
 		try {
-			acquire();
+			super.acquire();
 			
-			Thread.sleep(10);
+//			System.out.println("Bandwidth " + name + " - " + this.availablePermits());
+			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} finally {
+			super.release();
+//			System.out.println("Bandwidth " + name + " - " + this.availablePermits());
 		}
-		
-		release();
 	}
 }

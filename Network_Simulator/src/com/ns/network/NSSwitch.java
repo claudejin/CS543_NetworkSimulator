@@ -1,11 +1,11 @@
 package com.ns.network;
 
 import java.util.HashMap;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class NSSwitch extends NetworkEntity implements Runnable {
-	private Queue<Packet> msgQueue = new ConcurrentLinkedQueue<Packet>();
+	private BlockingQueue<Packet> msgQueue = new LinkedBlockingQueue<Packet>();
 	
 	private NSController myController = null;
 	private HashMap<String, NSHost> myHosts = new HashMap<String, NSHost>();
@@ -19,15 +19,14 @@ public class NSSwitch extends NetworkEntity implements Runnable {
 	public void run() {
 		// TODO Auto-generated method stub
 		while (this.operable) {
-			if (!msgQueue.isEmpty())
-				sendMessage();
+			sendMessage();
 			
-			try {
-				Thread.sleep(1);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+//			try {
+//				Thread.sleep(1);
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
 		}
 	}
 
@@ -59,33 +58,44 @@ public class NSSwitch extends NetworkEntity implements Runnable {
 	@Override
 	public void sendMessage() {
 		// TODO Auto-generated method stub
-		if (!msgQueue.isEmpty()) {
-			Packet pckt = msgQueue.poll();
+		try {
+			Packet pckt = msgQueue.take();
 			pckt.touch(this.getName());
-			myController.receiveMessage(pckt);
+			
+			if (myHosts.containsKey(pckt.dst))
+				myHosts.get(pckt.dst).receiveMessage(pckt);
+			else
+				myController.receiveMessage(pckt);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
 	@Override
 	public void receiveMessage(Packet pckt) {
 		// TODO Auto-generated method stub
-		boolean treated = false;
-		
-		if (myHosts.containsKey(pckt.dst)) {
-			pckt.touch(this.getName());
-			myHosts.get(pckt.dst).receiveMessage(pckt);
-			treated = true;
-		}
-		
-		if (!treated) {
-			if (myHosts.containsKey(pckt.src)) {
-				msgQueue.add(pckt);
+		try {
+			boolean treated = false;
+			
+			if (myHosts.containsKey(pckt.dst)) {
+				msgQueue.put(pckt);
 				treated = true;
 			}
+			
+			if (!treated) {
+				if (myHosts.containsKey(pckt.src)) {
+					msgQueue.put(pckt);
+					treated = true;
+				}
+			}
+			
+			if (!treated)
+				; // Drop
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		
-		if (!treated)
-			; // Drop
 	}
 
 }

@@ -1,12 +1,12 @@
 package com.ns.network;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import com.ns.simulation.MessageInjection;
 
 public class NSHost extends NetworkEntity implements Runnable, MessageInjection {
-	private Queue<Packet> msgQueue = new ConcurrentLinkedQueue<Packet>();
+	private BlockingQueue<Packet> msgQueue = new LinkedBlockingQueue<Packet>();
 	
 	private NSSwitch mySwitch = null;
 	
@@ -19,15 +19,14 @@ public class NSHost extends NetworkEntity implements Runnable, MessageInjection 
 	public void run() {
 		// TODO Auto-generated method stub
 		while (this.operable) {
-			if (!msgQueue.isEmpty())
-				sendMessage();
+			sendMessage();
 			
-			try {
-				Thread.sleep(1);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+//			try {
+//				Thread.sleep(1);
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
 		}
 	}
 	
@@ -44,16 +43,25 @@ public class NSHost extends NetworkEntity implements Runnable, MessageInjection 
 	@Override
 	public void enqueueMessage(Packet pckt) {
 		// TODO Auto-generated method stub
-		msgQueue.add(pckt);
+		try {
+			msgQueue.put(pckt);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	@Override
 	public void sendMessage() {
 		// TODO Auto-generated method stub
-		if (!msgQueue.isEmpty()) {
-			Packet pckt = msgQueue.poll();
+		try {
+			Packet pckt = msgQueue.take();
 			pckt.touch(this.getName());
+			
 			mySwitch.receiveMessage(pckt);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
@@ -61,7 +69,7 @@ public class NSHost extends NetworkEntity implements Runnable, MessageInjection 
 	public void receiveMessage(Packet pckt) {
 		// TODO Auto-generated method stub
 		pckt.touch(this.getName());
-		System.out.println(pckt.toString());
+//		System.out.println(pckt.getAge());
 	}
 	
 }
