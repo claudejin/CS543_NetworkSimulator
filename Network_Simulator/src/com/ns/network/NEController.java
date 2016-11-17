@@ -7,21 +7,21 @@ import java.util.concurrent.atomic.LongAdder;
 
 import com.ns.simulation.Properties;
 
-public class NSController extends NetworkEntity implements Runnable {
+public class NEController extends NetworkEntity implements Runnable {
 	private Bandwidth bandwidth = null;
 	
 	private BlockingQueue<Packet> innerQueue = new LinkedBlockingQueue<Packet>();
 	private BlockingQueue<Packet> outerQueue = new LinkedBlockingQueue<Packet>();
 	private BlockingQueue<Integer> selectionQueue = new LinkedBlockingQueue<Integer>(); // 0: InnterQueue, 1: OuterQueue
 	
-	private HashMap<String, NSSwitch> mySwitches = new HashMap<String, NSSwitch>();
+	private HashMap<String, NESwitch> mySwitches = new HashMap<String, NESwitch>();
 	
 	private LongAdder packetIn = new LongAdder();
 	private LongAdder packetOut = new LongAdder();
 	
-	public NSController(String name) {
+	public NEController(String name) {
 		super(name);
-		bandwidth = new Bandwidth(this.getName(), Properties.CONTROLLER_BANDWIDTH);
+		bandwidth = new Bandwidth(this.getName(), Properties.NE_CONTROLLER, Properties.CONTROLLER_BANDWIDTH);
 		// TODO Auto-generated constructor stub
 	}
 
@@ -44,11 +44,11 @@ public class NSController extends NetworkEntity implements Runnable {
 		CoreNetwork.unregisterController(this);
 	}
 	
-	public void registerSwitch(NSSwitch swtch) {
+	public void registerSwitch(NESwitch swtch) {
 		mySwitches.put(swtch.getName(), swtch);
 	}
 	
-	public void unregisterSwitch(NSSwitch swtch) {
+	public void unregisterSwitch(NESwitch swtch) {
 		if (mySwitches.containsKey(swtch.getName()))
 			mySwitches.remove(swtch.getName());
 		else
@@ -56,9 +56,9 @@ public class NSController extends NetworkEntity implements Runnable {
 	}
 	
 	class SendingThread extends Thread {
-		protected NSController cntr = null;
+		protected NEController cntr = null;
 		
-		public SendingThread(NSController cntr) {
+		public SendingThread(NEController cntr) {
 			this.cntr = cntr;
 		}
 	}
@@ -72,13 +72,13 @@ public class NSController extends NetworkEntity implements Runnable {
 				try {
 					bandwidth.useResource();
 					
-					Packet pckt;
+					Packet pckt = null;
 					boolean treated = false;
 					int queueSelected = selectionQueue.take();
 					
 					if (queueSelected == 0) {
 						pckt = innerQueue.take();
-						for (NSSwitch swtch : mySwitches.values()) {
+						for (NESwitch swtch : mySwitches.values()) {
 							if (swtch.containsHostByName(pckt.dst)) {
 								pckt.touch(cntr.getName());
 								swtch.receiveMessage(pckt);
@@ -89,7 +89,8 @@ public class NSController extends NetworkEntity implements Runnable {
 					
 					// When the target switch is migrated, the packet cannot be treated internally
 					if (!treated) {
-						pckt = outerQueue.take();
+						if (pckt == null)
+							pckt = outerQueue.take();
 						pckt.touch(cntr.getName());
 						CoreNetwork.requestBroadcastExcept(cntr, pckt);
 					}
@@ -108,7 +109,7 @@ public class NSController extends NetworkEntity implements Runnable {
 		try {
 			boolean treated = false;
 			
-			for (NSSwitch swtch : mySwitches.values()) {
+			for (NESwitch swtch : mySwitches.values()) {
 				if (swtch.containsHostByName(pckt.dst)) {
 					innerQueue.put(pckt);
 					selectionQueue.put(0);
@@ -117,7 +118,7 @@ public class NSController extends NetworkEntity implements Runnable {
 			}
 			
 			if (!treated) {
-				for (NSSwitch swtch : mySwitches.values()) {
+				for (NESwitch swtch : mySwitches.values()) {
 					if (swtch.containsHostByName(pckt.src)) {
 						outerQueue.put(pckt);
 						selectionQueue.put(1);

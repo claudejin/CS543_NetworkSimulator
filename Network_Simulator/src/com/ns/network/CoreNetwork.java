@@ -3,20 +3,29 @@ package com.ns.network;
 import java.util.HashSet;
 
 public class CoreNetwork extends Thread {
-	private static HashSet<NSController> controllerset = new HashSet<NSController>();
+	private static HashSet<NEController> controllerSet = new HashSet<NEController>();
+	private static HashSet<NESwitch> switchSet = new HashSet<NESwitch>();
 	
-	public static synchronized void registerController(NSController cntr) {
-		controllerset.add(cntr);
+	public static synchronized void registerController(NEController cntr) {
+		controllerSet.add(cntr);
 	}
 	
-	public static synchronized void unregisterController(NSController cntr) {
-		controllerset.remove(cntr);
+	public static synchronized void unregisterController(NEController cntr) {
+		controllerSet.remove(cntr);
 	}
 	
-	public static synchronized void requestBroadcastExcept(NSController src_cntr, Packet pckt) {
+	public static synchronized void registerSwitch(NESwitch swtch) {
+		switchSet.add(swtch);
+	}
+	
+	public static synchronized void unregisterSwitch(NESwitch swtch) {
+		switchSet.remove(swtch);
+	}
+	
+	public static synchronized void requestBroadcastExcept(NEController src_cntr, Packet pckt) {
 		pckt.touch("CORE");
 		
-		for (NSController cntr : controllerset) {
+		for (NEController cntr : controllerSet) {
 			if (!cntr.equals(src_cntr)) {
 				cntr.receiveMessage(pckt);
 			}
@@ -34,8 +43,11 @@ public class CoreNetwork extends Thread {
 				e.printStackTrace();
 			}
 			
-			for (NSController cntr : controllerset) {
+			for (NEController cntr : controllerSet) {
 				System.out.println("[MONITOR] " + cntr.getName() + " queued by " + cntr.getQueueLength());
+			}
+			for (NESwitch swtch : switchSet) {
+				System.out.println("[MONITOR] " + swtch.getName() + " queued by " + swtch.getQueueLength());
 			}
 			System.out.println("---------------------------");
 		}

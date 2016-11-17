@@ -5,12 +5,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import com.ns.simulation.MessageInjection;
 
-public class NSHost extends NetworkEntity implements Runnable, MessageInjection {
+public class NEHost extends NetworkEntity implements Runnable, MessageInjection {
 	private BlockingQueue<Packet> msgQueue = new LinkedBlockingQueue<Packet>();
 	
-	private NSSwitch mySwitch = null;
+	private NESwitch mySwitch = null;
 	
-	public NSHost(String name) {
+	public NEHost(String name) {
 		super(name);
 		// TODO Auto-generated constructor stub
 	}
@@ -30,12 +30,12 @@ public class NSHost extends NetworkEntity implements Runnable, MessageInjection 
 		}
 	}
 	
-	public void setSwitch(NSSwitch swtch) {
+	public void setSwitch(NESwitch swtch) {
 		this.mySwitch = swtch;
 		mySwitch.registerHost(this);
 	}
 	
-	public void detachSwitch(NSSwitch swtch) {
+	public void detachSwitch(NESwitch swtch) {
 		mySwitch.unregisterHost(this);
 		this.mySwitch = null;
 	}
@@ -69,7 +69,7 @@ public class NSHost extends NetworkEntity implements Runnable, MessageInjection 
 	public void receiveMessage(Packet pckt) {
 		// TODO Auto-generated method stub
 		pckt.touch(this.getName());
-//		System.out.println(pckt.getAge());
+//		System.out.println(pckt.toString());
 	}
 	
 }

@@ -3,15 +3,15 @@ package com.ns.simulation;
 import java.util.ArrayList;
 
 import com.ns.network.CoreNetwork;
-import com.ns.network.NSController;
-import com.ns.network.NSHost;
-import com.ns.network.NSSwitch;
+import com.ns.network.NEController;
+import com.ns.network.NEHost;
+import com.ns.network.NESwitch;
 import com.ns.network.NetworkEntity;
 
 public class Main {
-	private ArrayList<NSHost> hosts = new ArrayList<NSHost>();
-	private ArrayList<NSSwitch> switches = new ArrayList<NSSwitch>();
-	private ArrayList<NSController> controllers = new ArrayList<NSController>();
+	private ArrayList<NEHost> hosts = new ArrayList<NEHost>();
+	private ArrayList<NESwitch> switches = new ArrayList<NESwitch>();
+	private ArrayList<NEController> controllers = new ArrayList<NEController>();
 	
 	private ArrayList<NetworkEntity> entities = new ArrayList<NetworkEntity>();
 	
@@ -57,20 +57,20 @@ public class Main {
 		switches.clear();
 		controllers.clear();
 		
-		NSController cntr1 = new NSController("c1"); controllers.add(cntr1);
-		NSController cntr2 = new NSController("c2"); controllers.add(cntr2);
-		NSController cntr3 = new NSController("c3"); controllers.add(cntr3);
-		NSController cntr4 = new NSController("c4"); controllers.add(cntr4);
+		NEController cntr1 = new NEController("c1"); controllers.add(cntr1);
+		NEController cntr2 = new NEController("c2"); controllers.add(cntr2);
+		NEController cntr3 = new NEController("c3"); controllers.add(cntr3);
+		NEController cntr4 = new NEController("c4"); controllers.add(cntr4);
 		
-		NSSwitch swtch1 = new NSSwitch("s1"); swtch1.setController(cntr1); switches.add(swtch1); 
-		NSSwitch swtch2 = new NSSwitch("s2"); swtch2.setController(cntr2); switches.add(swtch2);
-		NSSwitch swtch3 = new NSSwitch("s3"); swtch3.setController(cntr3); switches.add(swtch3);
-		NSSwitch swtch4 = new NSSwitch("s4"); swtch4.setController(cntr4); switches.add(swtch4);
-		NSSwitch swtch5 = new NSSwitch("s5"); swtch5.setController(cntr4); switches.add(swtch5);
+		NESwitch swtch1 = new NESwitch("s1"); swtch1.setController(cntr1); switches.add(swtch1); 
+		NESwitch swtch2 = new NESwitch("s2"); swtch2.setController(cntr2); switches.add(swtch2);
+		NESwitch swtch3 = new NESwitch("s3"); swtch3.setController(cntr3); switches.add(swtch3);
+		NESwitch swtch4 = new NESwitch("s4"); swtch4.setController(cntr4); switches.add(swtch4);
+		NESwitch swtch5 = new NESwitch("s5"); swtch5.setController(cntr4); switches.add(swtch5);
 		
-		NSHost tmpHost = null;
+		NEHost tmpHost = null;
 		for (int i = 0; i < 15; i++) {
-			tmpHost = new NSHost(String.format("h%02d", i+1));
+			tmpHost = new NEHost(String.format("h%02d", i+1));
 			tmpHost.setSwitch(switches.get(i/3));
 			hosts.add(tmpHost);
 		}
